@@ -7,78 +7,23 @@ if (!empty($_POST)) {
 	if (!empty($stones) and $stones == $beetles) $message = "Каждому жуку досталось по камню. Свободных камней, при этом не осталось. У последнего жука 0 камней и слева и справа.";
 	
 	if (!isset($message)) {
-		class Line
-		{
-			public $size;
-			public $currentMap = [];
-			
-			function __construct($stones) {
-				$this->size = $stones;
-			}
-			
-			public function getStartMap()
-			{
-				return $this->getEmpties($this->size);
-			}
-			
-			public function getEmpties(int $freeStones): array
-			{
-				/*
-				*костылёво в связи с тем, что адресация камней идёт по последнему спрятанному жуку
-				*проверял корректность в EXCEL путём построения диаграмм
-				*
-				*/
-				$empties['left'] = $freeStones == 0 ? 0 : floor(($freeStones - 1) / 2);
-				$empties['right'] = $freeStones == 0 ? 0 : ceil(($freeStones - 1) / 2);
-				return $empties;
-			}
-			
-			public function addMoveToStep($currentMove): array
-			{
-				return $this->currentMap[] = $currentMove;
-			}
-			
-			public function getCountSteps(): int
-			{
-				return count($this->currentMap);
-			}
-			
-			public function getCurrentMoves(): array
-			{
-				return array_shift($this->currentMap);
-			}
-			
-			public function clearStage()
-			{
-				$this->currentMap = [];
-			}
-			
-		}
-		$map = new Line($stones);
-		$step = 1;
-		$empties = $map->getStartMap();
-		$map->addMoveToStep([$empties['left'], $empties['right']]);
-		if ($step == $beetles) $message = "Единственный жук спрятался за камень. Слева у него свободных камней: {$empties['left']}, а справа: {$empties['right']}";
+		$line[] = $stones;
+		$step = 0;
 		while ($step < $beetles) {
-			$movesAtThisStage = $map->getCountSteps();
-			for ($i = 0; $i < $movesAtThisStage; $i++) {
-				$currentMoves = $map->getCurrentMoves();
-				rsort($currentMoves);
-				foreach ($currentMoves as $move) {
-					$empties = $map->getEmpties($move);
-					$temp[] = $empties;
-					$step++;
-					if ($step == $beetles) {
-						$message = "Жук №$step спрятался за камень. Слева у него свободных камней: {$empties['left']}, а справа: {$empties['right']}";
-						break;
-					}
+			rsort($line);
+			for ($i = 0; $i < count($line); $i++) {
+				$left = $line[$i] == 0 ? 0 : floor(($line[$i] - 1) / 2);
+				$right = $line[$i] == 0 ? 0 : ceil(($line[$i] - 1) / 2);
+				$step++;
+				if ($step == $beetles) {
+					$message = "Жук №$step спрятался за камень. Слева у него свободных камней: {$left}, а справа: {$right}";
+					break 2;
 				}
+				$newLine[] = $left;
+				$newLine[] = $right;
 			}
-			$map->clearStage();
-			foreach ($temp as $newMove) {
-				$map->addMoveToStep($newMove);
-			}
-			$temp = [];
+			$line = $newLine;
+			$newLine = [];
 		}
 	}
 }
